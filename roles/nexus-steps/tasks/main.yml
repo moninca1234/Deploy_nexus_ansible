@@ -1,0 +1,74 @@
+---
+
+#Create nexus user to own nexus folder
+
+#Create nexus group
+
+   - name: Create nexus group
+     group:
+        name: nexus
+        state: present
+        gid: 10004
+
+#Create nexus user
+
+   - name: Create nexus user
+     user:
+       name: nexus
+       state: present
+       group: nexus
+       uid: 10005
+
+#Make nexus user owner of nexus folder
+
+   - name: Make nexus user owner of nexus folder
+     file:
+      path: /opt/nexus
+      state: directory
+      owner: nexus
+      group: nexus
+      recurse: yes
+
+#Make nexus user owner of sonatype-work folder
+
+   - name: Make nexus user owner of sonatype-work folder
+     file:
+       path: /opt/sonatype-work
+       state: directory
+       owner: nexus
+       group: nexus
+       recurse: yes
+
+#Start nexus with nexus user
+
+    - name: Set run as user nexus
+      lineinfile:
+        path: /opt/nexus/bin/nexus.rc
+        regexp: '^#run_as_user=""'
+        line: run_as_user="nexus"
+
+#Start nexus
+
+    - name: Start nexus
+      command: /opt/nexus/bin/nexus start
+
+#Verify nexus running
+
+    - name: Check with ps
+      shell : ps aux | grep nexus
+      register : app_status
+    - debug: msg={{app_status.stdout_lines}}
+
+#Wait one minute
+
+    - name: Wait one minute
+      pause:
+        minutes: 1
+
+#Check with netstat
+
+    - name: Check with netstat
+      shell : netstat -plnt
+      register: app_status
+    - debug: msg={{app_status.stdout_lines}}
+    
